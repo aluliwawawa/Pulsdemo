@@ -2,7 +2,7 @@
 
 ## Objective
 
-This document describes the **logical Galaxy Schema model** for Operational Controlling. It serves as the foundation for all downstream data transformations and reporting.
+This document describes the **Galaxy Schema model** for Operational Controlling. It serves as the foundation for all downstream data transformations and reporting.
 
 ---
 
@@ -14,7 +14,7 @@ This document describes the **logical Galaxy Schema model** for Operational Cont
 | -------------------------- | ------------------------------------------------- |
 | **FACT_PRODUCTION**        | Daily production summary by machine and product   |
 | **FACT_DEFECT_DETAIL**     | Detailed defect logs                              |
-| **FACT_MACHINE_STATE_LOG** | etailed defect logs                              |
+| **FACT_MACHINE_STATE_LOG** | Status Log of All Machines                        |
 
 ### Dimension Tables
 | Table           | Description                                 |
@@ -25,14 +25,28 @@ This document describes the **logical Galaxy Schema model** for Operational Cont
 | **DIM_PRODUCT** | Product catalog                             |
 | **DIM_DEFECT**  | Defect types and descriptions               |
 
+**Feilds explained in Dictionary.md**
+
 ---
 
 ## Table Relationships
 
-- All fact tables link to DIM_DATE, DIM_FACTORY, DIM_MACHINE.
-- FACT_DEFECT_DETAIL also links to DIM_PRODUCT and DIM_DEFECT.
-- FACT_MACHINE_UTILIZATION focuses on machine-level KPIs.
+FACT_PRODUCTION --> DIM_DATE
+FACT_PRODUCTION --> DIM_FACTORY
+FACT_PRODUCTION --> DIM_MACHINE
+FACT_PRODUCTION --> DIM_PRODUCT
 
+FACT_DEFECT_DETAIL --> DIM_DATE
+FACT_DEFECT_DETAIL --> DIM_FACTORY
+FACT_DEFECT_DETAIL --> DIM_MACHINE
+FACT_DEFECT_DETAIL --> DIM_PRODUCT
+FACT_DEFECT_DETAIL --> DIM_DEFECT
+
+FACT_MACHINE_STATE_LOG --> DIM_DATE
+FACT_MACHINE_STATE_LOG --> DIM_FACTORY
+FACT_MACHINE_STATE_LOG --> DIM_MACHINE
+
+---
 
 ## Design Principles
 

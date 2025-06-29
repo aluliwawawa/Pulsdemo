@@ -58,7 +58,7 @@
 
 ---
 
-## 🟥 Fact Tables
+## Fact Tables
 
 ### 1 FACT_PRODUCTION
 | Column           | Type        | Description                      |
@@ -107,5 +107,5 @@
 ---
 
 ## Notes
-- **Surrogate Keys (`*_sk`)** are integer-based primary keys for internal consistency and better performance.
-- **Natural Keys (`product_id`, `defect_code`, etc.)** are retained for traceability to source systems.
+- **Surrogate Keys** are autoincrement integer-based primary keys for internal consistency and better performance.
+- **Natural Keys** are retained for traceability to source systems.

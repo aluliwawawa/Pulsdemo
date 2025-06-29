@@ -4,11 +4,11 @@
 This schema contains business-driven data models for Operational Controlling.
 
 ## Contents
-| File                 | Description                     |
-|----------------------|---------------------------------|
-| analysis_modeling.md | KPI modeling (OEE, Utilization) |
-| dictionary.md        | Data dict for mart tables       |
-| model_sql/           | SQL scripts to create the tables|
+| File                     | Description                         |
+| ------------------------ | ----------------------------------- |
+| analysis_modeling.md     | KPI modeling (OEE, Utilization, etc.) |
+| dictionary.md            | Data dictionary for mart tables     |
+| model_sql/               | SQL scripts to create mart tables   |
 
 ## Tables in this schema
 - FACT_MACHINE_UTILIZATION
@@ -16,5 +16,5 @@ This schema contains business-driven data models for Operational Controlling.
 - V_DEFECT_TREND_DAILY
 - V_FACTORY_PERFORMANCE_SUMMARY
 
-## Data Pipeline
+## 🔄 Data Pipeline
 Data flows from:
