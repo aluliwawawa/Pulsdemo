@@ -1,6 +1,8 @@
 -- ############################################################
 -- 🔍 SECTION 4: SAMPLE QUERY
 -- ############################################################
+-- showcases the success load of location datas as start of a central data pipeline.
+-- Data Quality check tool report incidents as on-purpose design of dirty data
 -- sample1：query daily production of device_SMT
 SELECT log_date, factory_id, SUM(total_units) AS total_units
 FROM P1_RAW.SMT_LOG

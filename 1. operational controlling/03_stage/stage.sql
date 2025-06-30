@@ -1,6 +1,8 @@
 -- ############################################################
 -- SECTION 6: SAMPLE QUERY
 -- ############################################################
+-- sample 1: showcase the success of data standardization and join dimensions (Machine Type, Planned Time, Ideal Cycle Time etc.)
+
 SELECT
     factory_id,
     machine_id,
@@ -15,7 +17,7 @@ SELECT
     ideal_cycle_time
 FROM DEMO_PULS_OPERATION.P2_STAGE.STG_SMT_LOG
 ORDER BY log_date DESC
-LIMIT 20;
+LIMIT 10;
 
 -- ############################################################
 -- SECTION 1: CREATE STAGE TABLES

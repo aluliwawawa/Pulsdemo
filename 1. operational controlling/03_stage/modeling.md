@@ -23,6 +23,7 @@ Duration check passed, no adjustment needed.
 Fill null in defect_code with 'N/A'.
 Standardize shift to uppercase ('DAY' / 'NIGHT').
 Pass rate check passed.
+Revised "total_units" to 99 (as result of 94+5) where "log_date"='2024-01-19'
 
 ### STG_AOI_LOG
 Fill null in camera_id with 'UNKNOWN'.

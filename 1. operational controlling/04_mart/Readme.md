@@ -1,3 +1,6 @@
+FT not in modeling.
+one mart as few data and anlyze dimensionin demo phase
+
 # 04_mart - Business Data Modeling
 
 ## Purpose
