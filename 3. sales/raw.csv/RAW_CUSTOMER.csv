@@ -1,6 +1,0 @@
-customer_id,customer_name,is_KA,region_code,ingestion_date
-CUST_1,Customer_1,Y,CN,2025-07-19 06:37:47
-CUST_2,Customer_2,N,CN,2025-07-19 06:37:47
-CUST_3,Customer_3,N,PL,2025-07-19 06:37:47
-CUST_4,Customer_4,N,CZ,2025-07-19 06:37:47
-CUST_5,Customer_5,N,DE,2025-07-19 06:37:47
