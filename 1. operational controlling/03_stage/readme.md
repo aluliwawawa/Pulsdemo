@@ -37,5 +37,3 @@ The Stage layer is designed to:
 - No physical constraints on keys in Snowflake, but primary keys and unique keys are defined for clarity.
 - If any data quality issue (e.g., defect codes inconsistency) is found, a specific dimension table is built to clean it here.
 
-
-STG = RAW清洗 + DIM补充（Planned Time, Ideal Cycle Time等）

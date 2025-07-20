@@ -1,7 +1,51 @@
-defekt: inline
+## Data Modeling Overview
 
-1. there's some dirty data, but not dirty enough to prevent stage/mart
-2. data should be able to serve to produce our final goal: 设备利用率（Machine Utilization）
-良率（Yield Rate）工厂运营效率（Factory OEE） across plants and devices as discussed
-3. data make sense to the real world.
+The RAW layer preserves the original structure of source systems without normalization or business logic.
 
+### Table Structure
+
+Each incoming source is mapped directly to a table:
+
+Table Name
+
+Description
+
+MACHINE_STATUS_LOG
+
+Machine run-time and operational status logs
+
+#### SMT_LOG
+
+Surface Mount Technology production logs
+
+#### AOI_LOG
+
+Automated Optical Inspection results
+
+#### FT_LOG
+
+Functional Testing outcomes
+
+### Mapping Data Sources (ERD)
+
+All tables share common keys for future integration:
+
+factory_id
+
+machine_id
+
+log_date
+
+The Entity-Relationship Diagram (ERD) illustrates how these raw tables relate to downstream dimensions.
+
+### Data Characteristics
+
+Dirty data (nulls, type inconsistencies) are expected.
+
+No major blockers for staging.
+
+Designed to support realistic demo KPI computation.
+
+### ETL Notes
+
+SQL backups of table creation and ingestion scripts are available in Snowflake Worksheets.
