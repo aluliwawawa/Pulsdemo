@@ -1,0 +1,200 @@
+-- ############################################################
+-- SECTION 4: SAMPLE QUERY
+-- ############################################################
+-- showing the numbers of staged total rows
+SELECT 'STG_LEDGER' AS TABLE_NAME, COUNT(*) AS TOTAL_ROWS
+FROM DEMO_PULS_SALES.P2_STAGE.STG_LEDGER
+UNION ALL
+SELECT 'STG_CUSTOMER', COUNT(*)
+FROM DEMO_PULS_SALES.P2_STAGE.STG_CUSTOMER
+UNION ALL
+SELECT 'STG_SALES_ORDER', COUNT(*)
+FROM DEMO_PULS_SALES.P2_STAGE.STG_SO;
+
+
+-- ############################################################
+-- SECTION 1: CREATE STAGE TABLES
+-- ############################################################
+CREATE TABLE IF NOT EXISTS DEMO_PULS_SALES.P2_STAGE.STG_LEDGER(
+    AR_ID            STRING      NOT NULL,
+    CUSTOMER_ID      STRING      NOT NULL,
+    INVOICE_DATE     DATE        NOT NULL,
+    DUE_DATE         DATE        NOT NULL,
+    PAID_DATE        DATE,
+    AMOUNT           NUMBER(18,2) NOT NULL,
+    INGESTION_DATE   TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS DEMO_PULS_SALES.P2_STAGE.STG_CUSTOMER (
+    CUSTOMER_ID      STRING      NOT NULL,
+    CUSTOMER_NAME    STRING      NOT NULL,
+    IS_KA            BOOLEAN     NOT NULL,  -- Y/N transform to TRUE/FALSE
+    REGION_CODE      STRING      NOT NULL,
+    INGESTION_DATE   TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS DEMO_PULS_SALES.P2_STAGE.STG_SO (
+    ORDER_ID         STRING      NOT NULL,
+    CUSTOMER_ID      STRING      NOT NULL,
+    ORDER_DATE       DATE        NOT NULL,
+    AMOUNT           NUMBER(18,2) NOT NULL,
+    REGION_CODE      STRING      NOT NULL,
+    INGESTION_DATE   TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- ############################################################
+-- SECTION 2: DATA CLEAN FOR STAGE TABLES
+-- ############################################################
+
+-- 1. customer
+INSERT INTO DEMO_PULS_SALES.P2_STAGE.STG_CUSTOMER (
+    CUSTOMER_ID,
+    CUSTOMER_NAME,
+    IS_KA,
+    REGION_CODE,
+    INGESTION_DATE
+)
+SELECT
+    CUSTOMER_ID,
+    CUSTOMER_NAME,
+    CASE WHEN IS_KA = 'Y' THEN TRUE ELSE FALSE END AS IS_KA,
+    UPPER(REGION_CODE) AS REGION_CODE,
+    INGESTION_DATE
+FROM DEMO_PULS_SALES.P1_RAW.CUSTOMER;
+
+-- 2. Ledger
+INSERT INTO DEMO_PULS_SALES.P2_STAGE.STG_LEDGER (
+    AR_ID,
+    CUSTOMER_ID,
+    INVOICE_DATE,
+    DUE_DATE,
+    PAID_DATE,
+    AMOUNT,
+    INGESTION_DATE
+)
+SELECT
+    AR_ID,
+    CUSTOMER_ID,
+    TRY_TO_DATE(INVOICE_DATE)        AS INVOICE_DATE,
+    TRY_TO_DATE(DUE_DATE)            AS DUE_DATE,
+    TRY_TO_DATE(PAID_DATE)           AS PAID_DATE,
+    AMOUNT,
+    INGESTION_DATE
+FROM DEMO_PULS_SALES.P1_RAW.LEDGER
+WHERE AMOUNT > 0;  -- optional or based on business needs
+
+ALTER TABLE DEMO_PULS_SALES.P2_STAGE.STG_LEDGER
+ADD COLUMN IS_DUE_DATE_INVALID BOOLEAN DEFAULT FALSE;
+
+UPDATE DEMO_PULS_SALES.P2_STAGE.STG_LEDGER
+SET IS_DUE_DATE_INVALID = TRUE
+WHERE DUE_DATE < INVOICE_DATE;
+
+-- 3. SO
+INSERT INTO DEMO_PULS_SALES.P2_STAGE.STG_SO (
+    ORDER_ID,
+    CUSTOMER_ID,
+    ORDER_DATE,
+    AMOUNT,
+    REGION_CODE,
+    INGESTION_DATE
+)
+SELECT
+    ORDER_ID,
+    CUSTOMER_ID,
+    TRY_TO_DATE(ORDER_DATE)         AS ORDER_DATE,
+    AMOUNT,
+    UPPER(REGION_CODE)              AS REGION_CODE,
+    INGESTION_DATE
+FROM DEMO_PULS_SALES.P1_RAW.SALES_ORDER
+WHERE AMOUNT > 0;  -- optional
+
+
+-- ############################################################
+-- SECTION 3: DATA QUALITY CHECK TOOL
+-- ############################################################
+
+CREATE OR REPLACE TABLE DEMO_PULS_SALES.P2_STAGE.DQ_REPORT (
+    TABLE_NAME    STRING,             
+    ISSUE_TYPE    STRING,                
+    COLUMN_NAME   STRING,                
+    EXPECTED_ATTR STRING,                
+    ACTUAL_ATTR   STRING,               
+    INCIDENT_CNT  INT,                   
+    TOTAL_CNT     INT,                    
+    REPORT_DATE   DATE DEFAULT CURRENT_DATE,  
+    BATCH_LABEL   STRING DEFAULT 'DEFAULT',   
+    TABLE_LABEL   STRING DEFAULT NULL          -- optional
+);
+
+
+-- SET DQ check target
+SET target_table = 'DEMO_PULS_SALES.P2_STAGE.STG_LEDGER';
+SET batch_label = 'DQ_2025_07_23';
+SET table_label = 'STG_LEDGER_DUMMY';
+
+-- Script to be improved. Have issues regarding column name in Unpivot.
+
+-- ✅ Null Value
+INSERT INTO DEMO_PULS_SALES.P2_STAGE.DQ_REPORT
+SELECT
+    $target_table AS TABLE_NAME,
+    'NULL_VALUE'  AS ISSUE_TYPE,
+    COLUMN_NAME,
+    NULL          AS EXPECTED_ATTR,
+    NULL          AS ACTUAL_ATTR,
+    COUNT(*)      AS INCIDENT_CNT,
+    (SELECT COUNT(*) FROM IDENTIFIER($target_table)) AS TOTAL_CNT,
+    CURRENT_DATE,
+    $batch_label,
+    $table_label
+FROM IDENTIFIER($target_table)
+UNPIVOT (val FOR COL_NAME IN (*))
+WHERE val IS NULL
+GROUP BY COLUMN_NAME;
+
+
+-- check boolean TRUE/FALSE
+INSERT INTO DEMO_PULS_SALES.P2_STAGE.DQ_REPORT
+SELECT
+    $target_table,
+    'INVALID_BOOLEAN',
+    COLUMN_NAME,
+    'BOOLEAN (TRUE/FALSE)' AS EXPECTED_ATTR,
+    'Invalid Values'       AS ACTUAL_ATTR,
+    COUNT(*),
+    (SELECT COUNT(*) FROM IDENTIFIER($target_table)),
+    CURRENT_DATE,
+    $batch_label,
+    $table_label
+FROM IDENTIFIER($target_table)
+UNPIVOT (val FOR COLUMN_NAME IN (*))
+WHERE COLUMN_NAME IN (
+    SELECT COLUMN_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = SPLIT_PART($target_table, '.', 2)
+      AND TABLE_NAME   = SPLIT_PART($target_table, '.', 3)
+      AND DATA_TYPE LIKE '%BOOLEAN%'
+)
+  AND val NOT IN (TRUE, FALSE)
+GROUP BY COLUMN_NAME;
+
+-- check data type like NUMBER(18,2)
+INSERT INTO DEMO_PULS_SALES.P2_STAGE.DQ_REPORT
+SELECT
+    $target_table,
+    'TYPE_MISMATCH',
+    'AMOUNT',
+    'NUMBER(18,2)' AS EXPECTED_ATTR,
+    DATA_TYPE || '(' || NUMERIC_PRECISION || ',' || NUMERIC_SCALE || ')' AS ACTUAL_ATTR,
+    0,
+    (SELECT COUNT(*) FROM IDENTIFIER($target_table)),
+    CURRENT_DATE,
+    $batch_label,
+    $table_label
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = SPLIT_PART($target_table, '.', 2)
+  AND TABLE_NAME   = SPLIT_PART($target_table, '.', 3)
+  AND COLUMN_NAME = 'AMOUNT'
+  AND NOT (DATA_TYPE = 'NUMBER' AND NUMERIC_PRECISION = 18 AND NUMERIC_SCALE = 2);
